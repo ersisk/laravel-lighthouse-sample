@@ -1,0 +1,174 @@
+"A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
+scalar DateTime
+    @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
+"Indicates what fields are available at the top level of a query operation."
+type Query {
+    "Find a single user by an identifying attribute."
+    user(
+        "Search by primary key."
+        id: ID @eq @rules(apply: ["prohibits:email", "required_without:email"])
+
+        "Search by email address."
+        email: String
+            @eq
+            @rules(apply: ["prohibits:id", "required_without:id", "email"])
+    ): User @find
+
+    "List multiple users."
+    users(
+        "Filters by name. Accepts SQL LIKE wildcards `%` and `_`."
+        name: String @where(operator: "like")
+    ): [User!]! @paginate(defaultCount: 10)
+
+    "Find a single user by an identifying attribute."
+    author(
+        "Search by primary key."
+        id: ID @eq @rules(apply: ["prohibits:email", "required_without:email"])
+
+        "Search by email address."
+        name: String
+            @eq
+            @rules(apply: ["prohibits:id", "required_without:id", "name"])
+    ): Author @find
+
+    "List multiple users."
+    authors(
+        "Filters by name. Accepts SQL LIKE wildcards `%` and `_`."
+        name: String @where(operator: "like")
+
+        orderBy: _ @orderBy(columns: ["created_at", "id"])
+    ): [Author!]! @paginate(defaultCount: 10)
+
+    "Find a single user by an identifying attribute."
+    book(
+        "Search by primary key."
+        id: ID @eq @rules(apply: ["prohibits:email", "required_without:email"])
+
+        "Search by title."
+        title: String
+            @eq
+            @rules(apply: ["prohibits:id", "required_without:id", "title"])
+
+        "Search by original_title."
+        original_title: String
+            @eq
+            @rules(
+                apply: ["prohibits:id", "required_without:id", "original_title"]
+            )
+    ): Book @find
+
+    "List multiple users."
+    books(
+        "Filters by name. Accepts SQL LIKE wildcards `%` and `_`."
+        title: String @where(operator: "like")
+
+        orderBy: _ @orderBy(columns: ["created_at", "id"])
+    ): [Book!]! @paginate(defaultCount: 10)
+    me: User @auth
+}
+
+type Mutation {
+    createBook(input: CreateBookInput! @spread): Book @create @broadcast(subscription: "bookCreated") @guard
+    "Log in to a new session and get the user."
+    login(email: String!, password: String!): User!
+    "Log out from the current session, showing the user one last time."
+    logout: User @guard
+}
+
+input CreateBookInput {
+    title: String!
+    original_title: String!
+    isbn: String!
+    isbn_13: String!
+    language_code: String!
+    original_publication_year: String!
+    image_url: String!
+    authors: CreateAuthorBelongsToMany
+}
+
+input CreateAuthorBelongsToMany {
+    create: [CreateAuthorInput!]
+    connect: [ID!]
+    sync: [ID!]
+}
+
+input CreateAuthorInput {
+    name: String!
+}
+
+type Subscription {
+    bookCreated: Book @subscription(class: "App\\GraphQL\\Subscriptions\\BookCreated")
+}
+
+
+"Account of a person who utilizes this application."
+type User {
+    "Unique primary key."
+    id: ID!
+
+    "Non-unique name."
+    name: String!
+
+    "Unique email address."
+    email: String!
+
+    "When the email was verified."
+    email_verified_at: DateTime
+
+    "When the account was created."
+    created_at: DateTime!
+
+    "When the account was last updated."
+    updated_at: DateTime!
+}
+
+type Author {
+    "Unique primary key."
+    id: ID!
+
+    "Non-unique name."
+    name: String! @upperCase
+
+    "When the account was created."
+    created_at: DateTime!
+
+    "When the account was last updated."
+    updated_at: DateTime!
+
+    books: [Book!]! @belongsToMany
+}
+
+type Book {
+    "Unique primary key."
+    id: ID!
+
+    "Non-unique title."
+    title: String!
+
+    "Non-unique original_title."
+    original_title: String!
+
+    "Non-unique isbn."
+    isbn: String!
+
+    "Non-unique isbn_13."
+    isbn_13: String!
+
+    "Non-unique original_publication_year."
+    original_publication_year: String!
+
+    "Non-unique language_code."
+    language_code: String!
+
+    "Non-unique image_url."
+    image_url: String!
+
+    "When the book was created."
+    created_at: DateTime!
+
+    "When the book was last updated."
+    updated_at: DateTime!
+
+    authors: [Author!]! @belongsToMany
+}
