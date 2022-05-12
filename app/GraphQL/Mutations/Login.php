@@ -15,7 +15,7 @@ class Login
     {
         // Plain Laravel: Auth::guard()
         // Laravel Sanctum: Auth::guard(config('sanctum.guard', 'web'))
-        $guard = Auth::guard('web');
+        $guard = Auth::guard(config('sanctum.guard'));
 
         if( ! $guard->attempt($args)) {
             throw new Error('Invalid credentials.');
